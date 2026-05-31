@@ -117,20 +117,26 @@ exports.getPredictions = async (req, res) => {
     const cleanCategory = category ? category.replace('-PWD', '') : category;
 
     // DEFENSIVE QUERY BUILDING
-    let query = {};
-    if (cleanCategory) query.category = cleanCategory;
-    if (gender) query.gender = gender;
+    // let query = {};
+    // if (cleanCategory) query.category = cleanCategory;
+    // if (gender) query.gender = gender;
     
-    // Only apply the $in operator if types actually exists and has items
-    if (types && Array.isArray(types) && types.length > 0) {
-        query.type = { $in: types };
-    }
+    // // Only apply the $in operator if types actually exists and has items
+    // if (types && Array.isArray(types) && types.length > 0) {
+    //     query.type = { $in: types };
+    // }
 
-    if (isPwd !== undefined) {
-        query.isPwd = isPwd;
-    }
+    // if (isPwd !== undefined) {
+    //     query.isPwd = isPwd;
+    // }
 
-    console.log("🔍 ACTUAL MONGOOSE QUERY:", query);
+    // console.log("🔍 ACTUAL MONGOOSE QUERY:", query);
+    let query = {}; // Find EVERYTHING
+
+console.log("🔍 NAKED MONGOOSE QUERY:", query);
+
+// Make sure it still runs the rest of the code:
+const potentialSeats = await Cutoff.find(query).lean();
 
     const branchRegex = getDetailedBranchRegex(detailedBranches);
     const durationRegex = getDurationRegex(durations);
