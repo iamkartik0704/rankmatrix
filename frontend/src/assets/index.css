@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+body {
+  background-color: #030712;
+  color: white;
+}
+
+/* --- PREMIUM DARK MODE SCROLLBAR --- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px; /* Super thin and sleek */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Hides the ugly white track */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15); /* Semi-transparent glass thumb */
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3); /* Glows slightly when hovered */
+}
