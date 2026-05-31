@@ -1,7 +1,7 @@
 // components/PredictorDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { API_BASE } from '../config';
+// import { API_BASE } from '../config'; 
 
 const PredictorDashboard = ({ user }) => { 
   const [inputs, setInputs] = useState({
@@ -15,6 +15,9 @@ const PredictorDashboard = ({ user }) => {
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // NEW: State to control if the mobile filter menu is open or closed
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   const handleFilterToggle = (type) => {
     setInputs(prev => ({
@@ -37,6 +40,12 @@ const PredictorDashboard = ({ user }) => {
       
       const res = await axios.post('/api/predict', payload);
       setResults(res.data.data);
+      
+      // NEW: Auto-collapse the filters ONLY on mobile devices (width < 1024px)
+      if (window.innerWidth < 1024) {
+        setIsFiltersOpen(false);
+      }
+      
     } catch (err) {
       console.error(err);
     }
@@ -44,83 +53,116 @@ const PredictorDashboard = ({ user }) => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 min-h-screen flex flex-col">
+    <div className="max-w-[1600px] mx-auto p-4 sm:p-6 min-h-screen flex flex-col bg-[#0B0F19] text-white">
       
       <div className="flex-grow">
         
-        {/* --- NEW NAVBAR --- */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-200">
-          <h1 className="text-3xl font-bold text-gray-900">RankMatrix Predictor</h1>
+        {/* Responsive Header Row */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 pb-4 border-b border-gray-800">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-100">Predictor Engine</h1>
           
-          {/* Signature Badge */}
-          <div className="mt-3 sm:mt-0 text-sm tracking-widest text-gray-600 bg-gray-50 px-5 py-2 rounded-full border border-gray-200 shadow-sm">
-            Made with 💛 by <span className="font-bold text-gray-900 font-serif">π</span>
+          <div className="md:hidden mt-3 text-xs tracking-widest text-gray-400 bg-[#111827] px-4 py-1.5 rounded-full border border-gray-800 shadow-sm">
+            Made with 💛 by <span className="font-bold text-gray-200">π</span>
           </div>
         </div>
-        {/* ------------------ */}
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Form Panel */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <form onSubmit={fetchPredictions} className="space-y-4">
-              <div>
-                <label className="font-medium text-gray-700">JEE Mains Rank *</label>
-                <input type="number" required className="w-full border rounded mt-1 p-2 focus:ring-2 focus:ring-blue-500 outline-none" 
-                  value={inputs.mainsRank} onChange={e => setInputs({...inputs, mainsRank: e.target.value})} />
-              </div>
-              
-              <div>
-                <label className="font-medium text-gray-700">JEE Advanced Rank (Optional)</label>
-                <input type="number" className="w-full border rounded mt-1 p-2 focus:ring-2 focus:ring-blue-500 outline-none" 
-                  value={inputs.advRank} onChange={e => setInputs({...inputs, advRank: e.target.value})} />
-              </div>
-
-              {/* Dropdowns for Category, Gender, Domicile go here */}
-              
-              <div className="flex flex-wrap gap-2 mb-4 pt-2">
-                {['IIT', 'NIT', 'IIIT', 'GFTI'].map(type => (
-                  <button 
-                    key={type} type="button"
-                    onClick={() => handleFilterToggle(type)}
-                    className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${inputs.types.includes(type) ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-
-              <button type="submit" className="w-full bg-green-600 hover:bg-green-700 transition-colors text-white font-semibold py-2.5 rounded shadow">
-                {loading ? 'Analyzing...' : 'Predict Colleges'}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          
+          {/* LEFT SIDEBAR: Form Panel */}
+          <div className="lg:col-span-4 bg-[#111827] p-5 sm:p-6 rounded-xl shadow-lg border border-gray-800 h-fit">
+            
+            {/* NEW: Clickable Header to toggle form on mobile */}
+            <div 
+              className="flex justify-between items-center mb-2 lg:mb-6 cursor-pointer lg:cursor-default"
+              onClick={() => {
+                if (window.innerWidth < 1024) setIsFiltersOpen(!isFiltersOpen);
+              }}
+            >
+              <h2 className="text-xl font-bold border-l-4 border-cyan-400 pl-3">Input Matrix</h2>
+              <button className="lg:hidden text-gray-400 p-2">
+                {isFiltersOpen ? '▲' : '▼'}
               </button>
-            </form>
+            </div>
+
+            {/* NEW: Wraps the form in a div that hides on mobile if isFiltersOpen is false */}
+            <div className={`transition-all duration-300 ${isFiltersOpen ? 'block mt-4' : 'hidden'} lg:block lg:mt-0`}>
+              <form onSubmit={fetchPredictions} className="space-y-5">
+                
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">JEE Mains Rank *</label>
+                  <input type="number" required className="w-full bg-[#0B0F19] border border-gray-700 text-white rounded mt-1.5 p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                    value={inputs.mainsRank} onChange={e => setInputs({...inputs, mainsRank: e.target.value})} />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">JEE Advanced Rank <span className="text-gray-600 lowercase">(opt)</span></label>
+                  <input type="number" className="w-full bg-[#0B0F19] border border-gray-700 text-white rounded mt-1.5 p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                    value={inputs.advRank} onChange={e => setInputs({...inputs, advRank: e.target.value})} />
+                </div>
+
+                <div className="pt-2">
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Institute Types</label>
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    {['IIT', 'NIT', 'IIIT', 'GFTI'].map(type => (
+                      <button 
+                        key={type} type="button"
+                        onClick={() => handleFilterToggle(type)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${inputs.types.includes(type) ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-[#1F2937] text-gray-400 hover:bg-[#374151]'}`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button type="submit" className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 transition-all text-white font-bold py-3.5 rounded-lg shadow-lg mt-4">
+                  {loading ? 'Crunching Data...' : 'Execute Analysis'}
+                </button>
+              </form>
+            </div>
           </div>
 
-          {/* Results Panel */}
-          <div className="md:col-span-2">
+          {/* RIGHT SIDE: Results Panel */}
+          <div className="lg:col-span-8">
             {results.length > 0 ? (
               <div className="space-y-4">
                 {results.map((college, idx) => (
-                  <div key={idx} className="bg-white p-4 rounded-lg shadow flex justify-between items-center border border-gray-100">
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-800">{college.institute}</h3>
-                      <p className="text-gray-600">{college.program} <span className="text-sm font-medium text-blue-600">({college.quota})</span></p>
-                      <p className="text-sm text-gray-500 mt-1">Cutoff: <span className="font-semibold text-gray-700">{college.predictedClosingRank}</span></p>
+                  <div key={idx} className="bg-[#111827] p-4 sm:p-5 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 border border-gray-800 hover:border-gray-700 transition-colors">
+                    
+                    <div className="w-full sm:w-auto">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="text-xs font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">{college.type}</span>
+                        <span className="text-xs font-semibold text-gray-500">{college.quota} QUOTA</span>
+                      </div>
+                      <h3 className="font-bold text-base sm:text-lg text-gray-100 leading-tight">{college.institute}</h3>
+                      <p className="text-sm text-gray-400 mt-1">{college.program}</p>
+                      
+                      <div className="flex gap-4 mt-3">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase">Expected Cutoff</p>
+                          <p className="font-semibold text-gray-200">{college.predictedClosingRank}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className={`px-4 py-2 rounded text-white font-bold shadow-sm
-                      ${college.chanceScore === 'High' ? 'bg-green-500' 
-                      : college.chanceScore === 'Medium' ? 'bg-yellow-500' 
-                      : 'bg-red-500'}`}
-                    >
-                      {college.chanceScore}
+
+                    <div className="w-full sm:w-auto flex justify-end">
+                      <div className={`px-4 py-1.5 rounded-full text-sm font-bold shadow-sm border
+                        ${college.chanceScore === 'High' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                        : college.chanceScore === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' 
+                        : 'bg-red-500/10 text-red-400 border-red-500/20'}`}
+                      >
+                        {college.chanceScore} Chance
+                      </div>
                     </div>
+
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-10">
-                <span className="text-4xl mb-3">🔍</span>
-                <p className="font-medium text-lg">No Vectors Found</p>
-                <p className="text-sm mt-1">Enter your ranks and select filters to see predictions.</p>
+              <div className="h-64 sm:h-full flex flex-col items-center justify-center text-gray-500 bg-[#111827] rounded-xl border border-dashed border-gray-800 p-6 sm:p-10 text-center">
+                <span className="text-4xl mb-3 opacity-50">🔍</span>
+                <p className="font-semibold text-lg text-gray-300">No Vectors Found</p>
+                <p className="text-sm mt-1 max-w-sm">Initialize parameters inside the input matrix to compute admission bounds.</p>
               </div>
             )}
           </div>
