@@ -6,6 +6,7 @@ const cutoffSchema = new mongoose.Schema({
   type: { type: String, enum: ['IIT', 'NIT', 'IIIT', 'GFTI'], required: true },
   program: { type: String, required: true },
   category: { type: String, required: true },
+  isPwd: { type: Boolean, default: false },
   gender: { type: String, required: true },
   quota: { type: String, required: true }, // 'AI', 'HS', 'OS'
   state: { type: String }, // e.g., 'Haryana', 'Bihar' - used for HS quota matching

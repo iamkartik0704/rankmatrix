@@ -6,7 +6,30 @@ const outputFile = 'average.json';
 
 const branchData = new Map();
 
-console.log("Starting extraction: 60/30/10 Algorithm + Decimal Fix...");
+console.log("Starting extraction: 60/30/10 Algorithm + Decimal Fix + PwD Categories...");
+
+// Helper to normalize the category and properly extract PwD status
+function normalizeCategory(seatType) {
+    if (!seatType) return { base: 'UNKNOWN', isPwd: false, display: 'UNKNOWN' };
+    
+    const upperType = seatType.toUpperCase().trim();
+    const isPwd = upperType.includes('PWD');
+    
+    // Clean the base category name (remove PwD text and extra characters)
+    let base = upperType
+        .replace(/\(PWD\)/g, '')
+        .replace(/-PWD/g, '')
+        .replace(/PWD/g, '')
+        .trim();
+        
+    // Standardize "GENERAL" to "OPEN" to maintain strict JoSAA mapping
+    if (base === 'GENERAL') base = 'OPEN';
+    
+    // Create a clean display string, e.g., "OBC-NCL-PWD"
+    const display = isPwd ? `${base}-PWD` : base;
+    
+    return { base, isPwd, display };
+}
 
 fs.createReadStream(inputFile)
   .pipe(csv())
@@ -16,7 +39,12 @@ fs.createReadStream(inputFile)
     // We only care about the last 3 years for the 60/30/10 algorithm
     if (year < 2023 || year > 2025) return; 
 
-    const uniqueKey = `${row['Institute']}|${row['Academic Program Name']}|${row['Seat Type']}|${row['Quota']}|${row['Gender']}`;
+    // Extract and normalize the category
+    const categoryData = normalizeCategory(row['Seat Type']);
+    const displayCategory = categoryData.display;
+
+    // Use the normalized displayCategory in the uniqueKey to differentiate PwD and non-PwD
+    const uniqueKey = `${row['Institute']}|${row['Academic Program Name']}|${displayCategory}|${row['Quota']}|${row['Gender']}`;
 
     if (!branchData.has(uniqueKey)) {
         // Detect College Type automatically based on the name
@@ -35,7 +63,8 @@ fs.createReadStream(inputFile)
             institute: row['Institute'],
             type: instituteType,
             program: row['Academic Program Name'],
-            category: row['Seat Type'],
+            category: displayCategory, // This now safely contains OPEN, SC, OPEN-PWD, SC-PWD, etc.
+            isPwd: categoryData.isPwd, // Saving the boolean flag for frontend filtering
             quota: row['Quota'],
             gender: row['Gender'],
             history: {
@@ -99,6 +128,7 @@ fs.createReadStream(inputFile)
             type: data.type,
             program: data.program,
             category: data.category,
+            isPwd: data.isPwd,
             quota: data.quota,
             gender: data.gender,
             predictedClosingRank: finalWeightedRank, // The algorithm output

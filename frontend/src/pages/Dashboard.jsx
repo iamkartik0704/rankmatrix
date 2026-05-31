@@ -144,18 +144,20 @@ const PillGroup = ({ label, options, selected, onChange, useColors = false }) =>
 const Dashboard = ({ user }) => {
   const [inputs, setInputs] = useState(() => {
     const saved = localStorage.getItem('admitVector_inputs');
-    return saved ? JSON.parse(saved) : {
-      mainsRank: '',
-      advRank: '',
-      category: 'OPEN',
-      gender: 'Gender-Neutral',
-      domicileState: 'Haryana',
-      types: ['IIT', 'NIT', 'IIIT', 'GFTI'],
-      probabilities: [],
-      durations: [],
-      degrees: [],
-      targetStates: [],
-      detailedBranches: []
+    const parsed = saved ? JSON.parse(saved) : {};
+    return {
+      mainsRank: parsed.mainsRank || '',
+      advRank: parsed.advRank || '',
+      category: parsed.category || 'OPEN',
+      gender: parsed.gender || 'Gender-Neutral',
+      domicileState: parsed.domicileState || 'Haryana',
+      isPwd: parsed.isPwd || false, // Added PwD state initialization
+      types: parsed.types || ['IIT', 'NIT', 'IIIT', 'GFTI'],
+      probabilities: parsed.probabilities || [],
+      durations: parsed.durations || [],
+      degrees: parsed.degrees || [],
+      targetStates: parsed.targetStates || [],
+      detailedBranches: parsed.detailedBranches || []
     };
   });
 
@@ -180,6 +182,19 @@ const Dashboard = ({ user }) => {
   useEffect(() => {
     localStorage.setItem('admitVector_bookmarks', JSON.stringify(bookmarkedChoices));
   }, [bookmarkedChoices]);
+
+  // --- NEW: PwD Toggle Logic ---
+  const handlePwdToggle = (checked) => {
+    setInputs((prev) => {
+      // Strip any existing -PWD to avoid double appends (e.g., "SC-PWD-PWD")
+      const baseCategory = prev.category.replace('-PWD', '');
+      return {
+        ...prev,
+        isPwd: checked,
+        category: checked ? `${baseCategory}-PWD` : baseCategory
+      };
+    });
+  };
 
   const handleBranchToggle = (branch) => {
     setInputs(prev => ({
@@ -232,7 +247,6 @@ const Dashboard = ({ user }) => {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     
-    // Header - UPDATED TO JEE COLLEGE PREDICTOR
     doc.setFontSize(22);
     doc.setTextColor(30, 64, 175);
     doc.text("JEE College Predictor", 14, 22);
@@ -241,7 +255,6 @@ const Dashboard = ({ user }) => {
     doc.setTextColor(0, 0, 0);
     doc.text("Target Ledger - Counseling Strategy", 14, 30);
     
-    // User Context
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 38);
@@ -263,7 +276,6 @@ const Dashboard = ({ user }) => {
       tableRows.push(seatData);
     });
 
-    // Generate Table
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -289,7 +301,6 @@ const Dashboard = ({ user }) => {
       }
     });
 
-    // UPDATED EXPORT FILENAME
     doc.save("JEE_College_Predictor_Ledger.pdf");
   };
     
@@ -304,6 +315,23 @@ const Dashboard = ({ user }) => {
     }
   };
 
+  // --- Dynamic Category Options based on PwD State ---
+  const categoryOptions = inputs.isPwd 
+    ? [
+        { label: 'OPEN-PWD', value: 'OPEN-PWD' },
+        { label: 'OBC-NCL-PWD', value: 'OBC-NCL-PWD' },
+        { label: 'SC-PWD', value: 'SC-PWD' },
+        { label: 'ST-PWD', value: 'ST-PWD' },
+        { label: 'EWS-PWD', value: 'EWS-PWD' }
+      ]
+    : [
+        { label: 'OPEN', value: 'OPEN' },
+        { label: 'OBC-NCL', value: 'OBC-NCL' },
+        { label: 'SC', value: 'SC' },
+        { label: 'ST', value: 'ST' },
+        { label: 'EWS', value: 'EWS' }
+      ];
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#030712] p-4 sm:p-6 lg:p-10 font-sans text-gray-200 selection:bg-blue-500/30">
       
@@ -313,10 +341,9 @@ const Dashboard = ({ user }) => {
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-900/10 blur-[120px]"></div>
       </div>
 
-      {/* FULL WIDTH LAYOUT FIX: Changed max-w-7xl to max-w-[1800px] */}
       <div className="w-full max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 xl:gap-12 relative z-10">
         
-        {/* Left Input Matrix: Added xl:col-span-4 */}
+        {/* Left Input Matrix */}
         <div className="lg:col-span-5 xl:col-span-4 bg-[#0a0a0a]/80 backdrop-blur-2xl rounded-3xl border border-white/5 shadow-2xl h-[calc(100vh-120px)] sticky top-8 flex flex-col relative overflow-hidden">
           <div className="flex items-center gap-3 p-8 pb-6 flex-shrink-0 border-b border-white/5 relative z-10">
             <div className="h-8 w-1.5 bg-gradient-to-b from-blue-500 to-emerald-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
@@ -337,9 +364,37 @@ const Dashboard = ({ user }) => {
                   </div>
                 </div>
 
+                {/* --- NEW: PwD UI Checkbox properly styled for your Dark Theme --- */}
+                <div className="bg-black/40 border border-white/5 hover:border-white/10 rounded-xl p-4 flex items-center transition-all duration-300">
+                  <label className="flex items-center space-x-3 cursor-pointer w-full">
+                    <div className="relative flex items-center justify-center">
+                      <input 
+                        type="checkbox" 
+                        checked={inputs.isPwd} 
+                        onChange={(e) => handlePwdToggle(e.target.checked)} 
+                        className="peer appearance-none w-4 h-4 border border-gray-600 rounded-md bg-black checked:bg-blue-500 checked:border-blue-500 transition-all cursor-pointer shadow-inner" 
+                      />
+                      <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-300">
+                      Apply PwD Quota <span className="text-gray-500 text-xs">(Disability)</span>
+                    </span>
+                  </label>
+                </div>
+
                 <div className="grid grid-cols-2 gap-5">
-                  <PremiumDropdown label="Category" value={inputs.category} onChange={(val) => setInputs({...inputs, category: val})} options={[{ label: 'OPEN', value: 'OPEN' }, { label: 'OBC-NCL', value: 'OBC-NCL' }, { label: 'SC', value: 'SC' }, { label: 'ST', value: 'ST' }, { label: 'EWS', value: 'EWS' }]} />
-                  <PremiumDropdown label="Seat Pool" value={inputs.gender} onChange={(val) => setInputs({...inputs, gender: val})} options={[{ label: 'Neutral', value: 'Gender-Neutral' }, { label: 'Female Only', value: 'Female-only' }]} />
+                  <PremiumDropdown 
+                    label="Category" 
+                    value={inputs.category} 
+                    onChange={(val) => setInputs({...inputs, category: val})} 
+                    options={categoryOptions} // Dynamically fed options
+                  />
+                  <PremiumDropdown 
+                    label="Seat Pool" 
+                    value={inputs.gender} 
+                    onChange={(val) => setInputs({...inputs, gender: val})} 
+                    options={[{ label: 'Neutral', value: 'Gender-Neutral' }, { label: 'Female Only', value: 'Female-only' }]} 
+                  />
                 </div>
                 <PremiumDropdown label="Domicile State" subtitle="(Home State Quota)" value={inputs.domicileState} onChange={(val) => setInputs({...inputs, domicileState: val})} options={INDIAN_STATES.map(s => ({label: s, value: s}))} />
               </div>
@@ -379,7 +434,7 @@ const Dashboard = ({ user }) => {
           </div>
         </div>
 
-        {/* Right Tab Window Interface: Added xl:col-span-8 */}
+        {/* Right Tab Window Interface */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-6">
           
           {/* Dynamic Top Navigation Tabs */}
