@@ -8,9 +8,18 @@ const Navbar = ({ user, onLogout }) => {
   return (
     <nav className="w-full flex justify-between items-center px-6 lg:px-10 py-4 bg-[#0a0b10] border-b border-white/5 sticky top-0 z-50">
       
-      {/* Left Side: Logo */}
-      <div className="text-2xl font-black tracking-tight">
-        <span className="text-blue-500">Rank</span><span className="text-emerald-400">Matrix</span>
+      {/* Left Side: Logo & Signature */}
+      <div className="flex items-center gap-4">
+        <div className="text-2xl font-black tracking-tight">
+          <span className="text-blue-500">Rank</span><span className="text-emerald-400">Matrix</span>
+        </div>
+        
+        {/* The Signature Badge */}
+        <div className="hidden sm:block px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+          <p className="text-xs tracking-wider text-gray-400">
+            Made with <span className="text-yellow-500">💛</span> by <span className="font-bold text-gray-200">π</span>
+          </p>
+        </div>
       </div>
       
       {/* Right Side: User Controls */}
