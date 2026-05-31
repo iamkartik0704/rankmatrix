@@ -110,21 +110,32 @@ exports.getPredictions = async (req, res) => {
         durations, degrees 
     } = req.body;
 
-    // Defensively handle category parsing
-    const cleanCategory = category ? category.replace('-PWD', '') : category;
+    console.log("📥 RECEIVED FILTERS:", req.body); 
 
-    // Bulletproof dynamic query builder
+    // --- SIMPLIFIED DYNAMIC QUERY BUILDER ---
     let query = {};
-    if (cleanCategory) query.category = cleanCategory;
-    if (gender) query.gender = gender;
+
+    // 1. Exact Category Match (Matches OPEN-PWD to OPEN-PWD directly)
+    if (category) {
+        query.category = category; 
+    }
+
+    // 2. Fuzzy Gender Match (Matches "Female-only" to "Female-only (including Supernumerary)")
+    if (gender) {
+        query.gender = { $regex: new RegExp(gender, 'i') }; 
+    }
     
+    // 3. College Type Match
     if (types && Array.isArray(types) && types.length > 0) {
         query.type = { $in: types };
     }
 
+    // 4. PwD Boolean Flag
     if (isPwd !== undefined) {
         query.isPwd = isPwd;
     }
+
+    console.log("🔍 FINAL MONGOOSE QUERY:", query);
 
     const branchRegex = getDetailedBranchRegex(detailedBranches);
     const durationRegex = getDurationRegex(durations);
@@ -140,7 +151,6 @@ exports.getPredictions = async (req, res) => {
         query.program = { $regex: new RegExp(`^${combinedRegex}`, 'i') };
     }
 
-    // Connects perfectly to the model fix we just applied
     const potentialSeats = await Cutoff.find(query).lean();
 
     let finalAllowedStates = [];
@@ -159,7 +169,7 @@ exports.getPredictions = async (req, res) => {
 
       const instituteState = getStateFromInstitute(seat.institute);
 
-      // RESTORED: Quota logic is back online to filter HS/OS properly
+      // Quota Logic (Restored and Active)
       if (seat.type === 'NIT' || seat.type === 'GFTI') {
           if (seat.quota === 'HS' && instituteState !== domicileState) return null;
           if (seat.quota === 'OS' && instituteState === domicileState) return null;
