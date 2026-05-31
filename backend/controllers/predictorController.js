@@ -1,5 +1,5 @@
 // controllers/predictorController.js
-const Cutoff = require('../models/AverageModel');
+const Cutoff = require('../models/Cutoff.js');
 
 const EXACT_STATES = [
   'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 
