@@ -13,7 +13,6 @@ const EXACT_STATES = [
 const getStateFromInstitute = (instituteName) => {
   const name = instituteName.toLowerCase();
   
-  // Custom City Mappings for NITs/GFTIs that don't have the state in their name
   if (name.includes('kurukshetra')) return 'Haryana';
   if (name.includes('tiruchirappalli')) return 'Tamil Nadu';
   if (name.includes('warangal')) return 'Telangana';
@@ -38,7 +37,6 @@ const getStateFromInstitute = (instituteName) => {
   if (name.includes('hamirpur')) return 'Himachal Pradesh';
   if (name.includes('srinagar')) return 'Jammu and Kashmir';
 
-  // Fallback: Check if the exact state name is anywhere in the institute string (Great for IIITs)
   for (let state of EXACT_STATES) {
       if (name.includes(state.toLowerCase())) {
           return state;
@@ -48,7 +46,6 @@ const getStateFromInstitute = (instituteName) => {
   return 'Unknown'; 
 };
 
-// Neighbor Map for "Near My Domicile State" logic
 const getNeighborStates = (state) => {
     const map = {
         'Haryana': ['Punjab', 'Delhi', 'Uttar Pradesh', 'Rajasthan', 'Chandigarh', 'Himachal Pradesh'],
@@ -107,27 +104,29 @@ const getDegreeRegex = (degrees) => {
 
 exports.getPredictions = async (req, res) => {
   try {
-    // MODIFICATION 1: Extract isPwd from req.body
     const { 
         mainsRank, advRank, category, gender, domicileState, isPwd,
         types, detailedBranches, targetStates, probabilities, 
         durations, degrees 
     } = req.body;
 
-    console.log("📥 RECEIVED FILTERS:", req.body); // Debugging log to verify incoming payload
+    console.log("📥 RECEIVED FILTERS:", req.body); 
+
+    // FIX 1: Strip the "-PWD" tag off the string to match the DB
+    const cleanCategory = category ? category.replace('-PWD', '') : category;
 
     let query = {
-      category: category,
+      category: cleanCategory,
       gender: gender,
       type: { $in: types }
     };
 
-    // MODIFICATION 2: Explicitly query the isPwd boolean if provided
+    // FIX 2: Explicitly query the isPwd boolean
     if (isPwd !== undefined) {
         query.isPwd = isPwd;
     }
 
-    console.log("🔍 MONGOOSE QUERY:", query); // Debugging log to verify the built query
+    console.log("🔍 ACTUAL MONGOOSE QUERY:", query);
 
     const branchRegex = getDetailedBranchRegex(detailedBranches);
     const durationRegex = getDurationRegex(durations);
@@ -161,7 +160,7 @@ exports.getPredictions = async (req, res) => {
 
       const instituteState = getStateFromInstitute(seat.institute);
 
-      // MODIFICATION 3: Quota logic temporarily disabled to prevent aggressive filtering of rare PwD seats
+      // FIX 3: Quota logic temporarily disabled to prevent aggressive filtering
       /*
       if (seat.type === 'NIT' || seat.type === 'GFTI') {
           if (seat.quota === 'HS' && instituteState !== domicileState) return null;
@@ -178,7 +177,6 @@ exports.getPredictions = async (req, res) => {
       const percentageDiff = (margin / closingRank) * 100;
       
       let chance = 'Unlikely';
-      
       let mediumDrift, lowDrift;
       
       if (closingRank <= 5000) {
@@ -222,7 +220,7 @@ exports.getPredictions = async (req, res) => {
     res.status(200).json({ success: true, count: evaluatedSeats.length, data: evaluatedSeats });
 
   } catch (error) {
-    console.error("❌ Prediction Engine Error:", error); // Enhanced error log for debugging
+    console.error("❌ Prediction Engine Error:", error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
