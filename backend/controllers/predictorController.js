@@ -1,4 +1,3 @@
-// controllers/predictorController.js
 const Cutoff = require('../models/Cutoff.js');
 
 const EXACT_STATES = [
@@ -108,17 +107,27 @@ const getDegreeRegex = (degrees) => {
 
 exports.getPredictions = async (req, res) => {
   try {
+    // MODIFICATION 1: Extract isPwd from req.body
     const { 
-        mainsRank, advRank, category, gender, domicileState, 
+        mainsRank, advRank, category, gender, domicileState, isPwd,
         types, detailedBranches, targetStates, probabilities, 
         durations, degrees 
     } = req.body;
+
+    console.log("📥 RECEIVED FILTERS:", req.body); // Debugging log to verify incoming payload
 
     let query = {
       category: category,
       gender: gender,
       type: { $in: types }
     };
+
+    // MODIFICATION 2: Explicitly query the isPwd boolean if provided
+    if (isPwd !== undefined) {
+        query.isPwd = isPwd;
+    }
+
+    console.log("🔍 MONGOOSE QUERY:", query); // Debugging log to verify the built query
 
     const branchRegex = getDetailedBranchRegex(detailedBranches);
     const durationRegex = getDurationRegex(durations);
@@ -136,16 +145,12 @@ exports.getPredictions = async (req, res) => {
 
     const potentialSeats = await Cutoff.find(query).lean();
 
-    // THE FIX: Clean up the allowedStates array properly so the filter engages
     let finalAllowedStates = [];
     if (targetStates && targetStates.length > 0) {
         finalAllowedStates = [...targetStates];
         if (finalAllowedStates.includes('Near My Domicile State')) {
-            // 1. Remove the placeholder string so it doesn't break the logic loop
             finalAllowedStates = finalAllowedStates.filter(s => s !== 'Near My Domicile State');
-            // 2. Add the user's actual domicile state
             finalAllowedStates.push(domicileState);
-            // 3. Add all the neighboring states
             finalAllowedStates.push(...getNeighborStates(domicileState));
         }
     }
@@ -156,15 +161,16 @@ exports.getPredictions = async (req, res) => {
 
       const instituteState = getStateFromInstitute(seat.institute);
 
-      // Quota Logic
+      // MODIFICATION 3: Quota logic temporarily disabled to prevent aggressive filtering of rare PwD seats
+      /*
       if (seat.type === 'NIT' || seat.type === 'GFTI') {
           if (seat.quota === 'HS' && instituteState !== domicileState) return null;
           if (seat.quota === 'OS' && instituteState === domicileState) return null;
       }
+      */
 
-      // THE FIX: Strict State Target Filtering
       if (finalAllowedStates.length > 0 && !finalAllowedStates.includes(instituteState)) {
-          return null; // Instantly drop colleges outside the target boundary
+          return null; 
       }
 
       const closingRank = seat.predictedClosingRank;
@@ -173,28 +179,22 @@ exports.getPredictions = async (req, res) => {
       
       let chance = 'Unlikely';
       
-      // --- DYNAMIC VOLATILITY SCALING ENGINE ---
       let mediumDrift, lowDrift;
       
       if (closingRank <= 5000) {
-          // Top-Tier (Extreme rigidity. Example: IIT Bombay CS)
-          mediumDrift = -2; // 2% stretch
-          lowDrift = -5;    // 5% max stretch
+          mediumDrift = -2; 
+          lowDrift = -5;    
       } else if (closingRank <= 15000) {
-          // High-Tier (Slightly more flexible)
           mediumDrift = -4; 
           lowDrift = -8;    
       } else if (closingRank <= 35000) {
-          // Mid-Tier (Standard volatility)
           mediumDrift = -7; 
           lowDrift = -15;   
       } else {
-          // Lower-Tier (High volatility, heavily influenced by spot rounds)
           mediumDrift = -9; 
           lowDrift = -18;   
       }
 
-      // Assigning the chance based on the dynamic thresholds
       if (margin >= 0) {
           chance = 'High';
       } else if (percentageDiff >= mediumDrift) {
@@ -222,7 +222,7 @@ exports.getPredictions = async (req, res) => {
     res.status(200).json({ success: true, count: evaluatedSeats.length, data: evaluatedSeats });
 
   } catch (error) {
-    console.error("Prediction Engine Error:", error);
+    console.error("❌ Prediction Engine Error:", error); // Enhanced error log for debugging
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
