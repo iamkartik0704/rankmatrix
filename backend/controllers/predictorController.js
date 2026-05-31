@@ -112,15 +112,17 @@ exports.getPredictions = async (req, res) => {
 
     console.log("📥 RECEIVED FILTERS:", req.body); 
 
-    // --- SIMPLIFIED DYNAMIC QUERY BUILDER ---
     let query = {};
 
-    // 1. Exact Category Match (Matches OPEN-PWD to OPEN-PWD directly)
+    // 1. SMART CATEGORY MATCH (Handles OBC-NCL-PWD, SC-PWD, OPEN-PWD dynamically)
     if (category) {
-        query.category = category; 
+        // Extracts the base (e.g., 'OBC-NCL' from 'OBC-NCL-PWD')
+        const baseCategory = category.replace('-PWD', '').trim();
+        // Searches for any category starting with that base string
+        query.category = { $regex: new RegExp(`^${baseCategory}`, 'i') }; 
     }
 
-    // 2. Fuzzy Gender Match (Matches "Female-only" to "Female-only (including Supernumerary)")
+    // 2. SMART GENDER MATCH (Handles "Female-only (including Supernumerary)")
     if (gender) {
         query.gender = { $regex: new RegExp(gender, 'i') }; 
     }
@@ -130,7 +132,7 @@ exports.getPredictions = async (req, res) => {
         query.type = { $in: types };
     }
 
-    // 4. PwD Boolean Flag
+    // 4. PwD Boolean Flag (The ultimate filter)
     if (isPwd !== undefined) {
         query.isPwd = isPwd;
     }
