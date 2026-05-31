@@ -19,11 +19,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/predict', predictorRoutes);
 if (process.env.NODE_ENV === 'production') {
   // Point to the 'build' folder created by npm run build in the frontend
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
   // For any route that isn't /api, send index.html
   app.get(/.*/, (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'));
+    res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
   });
 }
 const PORT = process.env.PORT || 5000;
