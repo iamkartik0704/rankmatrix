@@ -113,15 +113,19 @@ exports.getPredictions = async (req, res) => {
     console.log("📥 RECEIVED FILTERS:", req.body); 
 
     // FIX 1: Strip the "-PWD" tag off the string to match the DB
+    // Strip the "-PWD" tag
     const cleanCategory = category ? category.replace('-PWD', '') : category;
 
-    let query = {
-      category: cleanCategory,
-      gender: gender,
-      type: { $in: types }
-    };
+    // DEFENSIVE QUERY BUILDING
+    let query = {};
+    if (cleanCategory) query.category = cleanCategory;
+    if (gender) query.gender = gender;
+    
+    // Only apply the $in operator if types actually exists and has items
+    if (types && Array.isArray(types) && types.length > 0) {
+        query.type = { $in: types };
+    }
 
-    // FIX 2: Explicitly query the isPwd boolean
     if (isPwd !== undefined) {
         query.isPwd = isPwd;
     }
