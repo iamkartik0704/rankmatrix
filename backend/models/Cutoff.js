@@ -16,4 +16,5 @@ const cutoffSchema = new mongoose.Schema({
 });
 
 cutoffSchema.index({ type: 1, category: 1, gender: 1 });
-module.exports = mongoose.model('Cutoff', cutoffSchema);
+// module.exports = mongoose.model('Cutoff', cutoffSchema);
+module.exports = mongoose.model('Cutoff', cutoffSchema, 'averages');
