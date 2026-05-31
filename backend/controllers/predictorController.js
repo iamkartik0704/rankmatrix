@@ -110,33 +110,21 @@ exports.getPredictions = async (req, res) => {
         durations, degrees 
     } = req.body;
 
-    console.log("📥 RECEIVED FILTERS:", req.body); 
-
-    // FIX 1: Strip the "-PWD" tag off the string to match the DB
-    // Strip the "-PWD" tag
+    // Defensively handle category parsing
     const cleanCategory = category ? category.replace('-PWD', '') : category;
 
-    // DEFENSIVE QUERY BUILDING
-    // let query = {};
-    // if (cleanCategory) query.category = cleanCategory;
-    // if (gender) query.gender = gender;
+    // Bulletproof dynamic query builder
+    let query = {};
+    if (cleanCategory) query.category = cleanCategory;
+    if (gender) query.gender = gender;
     
-    // // Only apply the $in operator if types actually exists and has items
-    // if (types && Array.isArray(types) && types.length > 0) {
-    //     query.type = { $in: types };
-    // }
+    if (types && Array.isArray(types) && types.length > 0) {
+        query.type = { $in: types };
+    }
 
-    // if (isPwd !== undefined) {
-    //     query.isPwd = isPwd;
-    // }
-
-    // console.log("🔍 ACTUAL MONGOOSE QUERY:", query);
-    let query = {}; // Find EVERYTHING
-
-console.log("🔍 NAKED MONGOOSE QUERY:", query);
-
-// Make sure it still runs the rest of the code:
-const potentialSeats = await Cutoff.find(query).lean();
+    if (isPwd !== undefined) {
+        query.isPwd = isPwd;
+    }
 
     const branchRegex = getDetailedBranchRegex(detailedBranches);
     const durationRegex = getDurationRegex(durations);
@@ -152,7 +140,8 @@ const potentialSeats = await Cutoff.find(query).lean();
         query.program = { $regex: new RegExp(`^${combinedRegex}`, 'i') };
     }
 
-    // const potentialSeats = await Cutoff.find(query).lean();
+    // Connects perfectly to the model fix we just applied
+    const potentialSeats = await Cutoff.find(query).lean();
 
     let finalAllowedStates = [];
     if (targetStates && targetStates.length > 0) {
@@ -170,13 +159,11 @@ const potentialSeats = await Cutoff.find(query).lean();
 
       const instituteState = getStateFromInstitute(seat.institute);
 
-      // FIX 3: Quota logic temporarily disabled to prevent aggressive filtering
-      /*
+      // RESTORED: Quota logic is back online to filter HS/OS properly
       if (seat.type === 'NIT' || seat.type === 'GFTI') {
           if (seat.quota === 'HS' && instituteState !== domicileState) return null;
           if (seat.quota === 'OS' && instituteState === domicileState) return null;
       }
-      */
 
       if (finalAllowedStates.length > 0 && !finalAllowedStates.includes(instituteState)) {
           return null; 
