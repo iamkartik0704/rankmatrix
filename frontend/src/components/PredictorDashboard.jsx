@@ -16,7 +16,7 @@ const PredictorDashboard = ({ user }) => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  // NEW: State to control if the mobile filter menu is open or closed
+  // State to control if the mobile filter menu is open or closed
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   const handleFilterToggle = (type) => {
@@ -41,7 +41,7 @@ const PredictorDashboard = ({ user }) => {
       const res = await axios.post('/api/predict', payload);
       setResults(res.data.data);
       
-      // NEW: Auto-collapse the filters ONLY on mobile devices (width < 1024px)
+      // Auto-collapse the filters ONLY on mobile devices (width < 1024px)
       if (window.innerWidth < 1024) {
         setIsFiltersOpen(false);
       }
@@ -69,23 +69,27 @@ const PredictorDashboard = ({ user }) => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           
           {/* LEFT SIDEBAR: Form Panel */}
-          <div className="lg:col-span-4 bg-[#111827] p-5 sm:p-6 rounded-xl shadow-lg border border-gray-800 h-fit">
+          <div className="relative z-20 lg:col-span-4 bg-[#111827] p-5 sm:p-6 rounded-xl shadow-lg border border-gray-800 h-fit">
             
-            {/* NEW: Clickable Header to toggle form on mobile */}
+            {/* Clickable Header to toggle form on mobile */}
             <div 
-              className="flex justify-between items-center mb-2 lg:mb-6 cursor-pointer lg:cursor-default"
+              className="flex justify-between items-center cursor-pointer lg:cursor-default"
               onClick={() => {
                 if (window.innerWidth < 1024) setIsFiltersOpen(!isFiltersOpen);
               }}
             >
               <h2 className="text-xl font-bold border-l-4 border-cyan-400 pl-3">Input Matrix</h2>
-              <button className="lg:hidden text-gray-400 p-2">
+              <button type="button" className="lg:hidden text-gray-400 p-2">
                 {isFiltersOpen ? '▲' : '▼'}
               </button>
             </div>
 
-            {/* NEW: Wraps the form in a div that hides on mobile if isFiltersOpen is false */}
-            <div className={`transition-all duration-300 ${isFiltersOpen ? 'block mt-4' : 'hidden'} lg:block lg:mt-0`}>
+            {/* Flawless Accordion Wrapper using max-height */}
+            <div 
+              className={`overflow-hidden transition-all duration-500 ease-in-out lg:max-h-[2000px] lg:opacity-100 ${
+                isFiltersOpen ? 'max-h-[2000px] opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'
+              }`}
+            >
               <form onSubmit={fetchPredictions} className="space-y-5">
                 
                 <div>
