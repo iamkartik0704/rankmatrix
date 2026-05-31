@@ -152,7 +152,7 @@ const potentialSeats = await Cutoff.find(query).lean();
         query.program = { $regex: new RegExp(`^${combinedRegex}`, 'i') };
     }
 
-    const potentialSeats = await Cutoff.find(query).lean();
+    // const potentialSeats = await Cutoff.find(query).lean();
 
     let finalAllowedStates = [];
     if (targetStates && targetStates.length > 0) {
