@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../config';
 
-const PredictorDashboard = ({ user }) => { // user passed down from OAuth login
+const PredictorDashboard = ({ user }) => { 
   const [inputs, setInputs] = useState({
     mainsRank: '',
     advRank: '',
@@ -29,7 +29,6 @@ const PredictorDashboard = ({ user }) => { // user passed down from OAuth login
     e.preventDefault();
     setLoading(true);
     try {
-      // Ensure ranks are numbers
       const payload = {
         ...inputs,
         mainsRank: Number(inputs.mainsRank),
@@ -47,41 +46,50 @@ const PredictorDashboard = ({ user }) => { // user passed down from OAuth login
   return (
     <div className="max-w-6xl mx-auto p-4 min-h-screen flex flex-col">
       
-      {/* Main Content Wrapper (Grows to push footer down) */}
       <div className="flex-grow">
-        <h1 className="text-3xl font-bold mb-6">RankMatrix Predictor</h1>
+        
+        {/* --- NEW NAVBAR --- */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-200">
+          <h1 className="text-3xl font-bold text-gray-900">RankMatrix Predictor</h1>
+          
+          {/* Signature Badge */}
+          <div className="mt-3 sm:mt-0 text-sm tracking-widest text-gray-600 bg-gray-50 px-5 py-2 rounded-full border border-gray-200 shadow-sm">
+            Made with 💛 by <span className="font-bold text-gray-900 font-serif">π</span>
+          </div>
+        </div>
+        {/* ------------------ */}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Form Panel */}
           <div className="bg-white p-6 rounded-lg shadow">
             <form onSubmit={fetchPredictions} className="space-y-4">
               <div>
-                <label>JEE Mains Rank *</label>
-                <input type="number" required className="w-full border p-2" 
+                <label className="font-medium text-gray-700">JEE Mains Rank *</label>
+                <input type="number" required className="w-full border rounded mt-1 p-2 focus:ring-2 focus:ring-blue-500 outline-none" 
                   value={inputs.mainsRank} onChange={e => setInputs({...inputs, mainsRank: e.target.value})} />
               </div>
               
               <div>
-                <label>JEE Advanced Rank (Optional)</label>
-                <input type="number" className="w-full border p-2" 
+                <label className="font-medium text-gray-700">JEE Advanced Rank (Optional)</label>
+                <input type="number" className="w-full border rounded mt-1 p-2 focus:ring-2 focus:ring-blue-500 outline-none" 
                   value={inputs.advRank} onChange={e => setInputs({...inputs, advRank: e.target.value})} />
               </div>
 
               {/* Dropdowns for Category, Gender, Domicile go here */}
               
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-wrap gap-2 mb-4 pt-2">
                 {['IIT', 'NIT', 'IIIT', 'GFTI'].map(type => (
                   <button 
                     key={type} type="button"
                     onClick={() => handleFilterToggle(type)}
-                    className={`px-3 py-1 rounded ${inputs.types.includes(type) ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                    className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${inputs.types.includes(type) ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                   >
                     {type}
                   </button>
                 ))}
               </div>
 
-              <button type="submit" className="w-full bg-green-600 text-white py-2 rounded">
+              <button type="submit" className="w-full bg-green-600 hover:bg-green-700 transition-colors text-white font-semibold py-2.5 rounded shadow">
                 {loading ? 'Analyzing...' : 'Predict Colleges'}
               </button>
             </form>
@@ -92,13 +100,13 @@ const PredictorDashboard = ({ user }) => { // user passed down from OAuth login
             {results.length > 0 ? (
               <div className="space-y-4">
                 {results.map((college, idx) => (
-                  <div key={idx} className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
+                  <div key={idx} className="bg-white p-4 rounded-lg shadow flex justify-between items-center border border-gray-100">
                     <div>
-                      <h3 className="font-bold text-lg">{college.institute}</h3>
-                      <p className="text-gray-600">{college.program} ({college.quota})</p>
-                      <p className="text-sm">Cutoff: {college.predictedClosingRank}</p>
+                      <h3 className="font-bold text-lg text-gray-800">{college.institute}</h3>
+                      <p className="text-gray-600">{college.program} <span className="text-sm font-medium text-blue-600">({college.quota})</span></p>
+                      <p className="text-sm text-gray-500 mt-1">Cutoff: <span className="font-semibold text-gray-700">{college.predictedClosingRank}</span></p>
                     </div>
-                    <div className={`px-4 py-2 rounded text-white font-bold
+                    <div className={`px-4 py-2 rounded text-white font-bold shadow-sm
                       ${college.chanceScore === 'High' ? 'bg-green-500' 
                       : college.chanceScore === 'Medium' ? 'bg-yellow-500' 
                       : 'bg-red-500'}`}
@@ -109,19 +117,15 @@ const PredictorDashboard = ({ user }) => { // user passed down from OAuth login
                 ))}
               </div>
             ) : (
-              <div className="text-center text-gray-500 mt-10">Enter your ranks to see predictions.</div>
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-10">
+                <span className="text-4xl mb-3">🔍</span>
+                <p className="font-medium text-lg">No Vectors Found</p>
+                <p className="text-sm mt-1">Enter your ranks and select filters to see predictions.</p>
+              </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* --- Footer --- */}
-      <div className="w-full text-center py-6 mt-12 border-t border-gray-200">
-        <p className="text-gray-500 text-sm tracking-widest">
-          Made with 💛 by <span className="font-semibold text-gray-800">π</span>
-        </p>
-      </div>
-
     </div>
   );
 };
